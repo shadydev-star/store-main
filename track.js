@@ -1,38 +1,31 @@
 document.addEventListener('DOMContentLoaded', () => {
   const main = document.querySelector('.js-main');
   const cart = JSON.parse(localStorage.getItem('cart')) || [];
-  const orderDate = new Date(localStorage.getItem('orderDate')) || new Date();
-  const deliveryDate = new Date(orderDate.getTime() + 7 * 86400000);
-  const today = new Date();
-
-
-  
+  const orderDateRaw = localStorage.getItem('orderDate');
 
   main.innerHTML = '';
+
+  if (!orderDateRaw) {
+    main.innerHTML = '<p>No order placed yet.</p>';
+    return;
+  }
+
+  const orderDate = new Date(orderDateRaw);
+  const deliveryDate = new Date(orderDate.getTime() + 60 * 1000); // 1 minute delivery for test
+  const today = new Date();
 
   if (!cart.length) {
     main.innerHTML = '<p>No products to track.</p>';
     return;
   }
 
+  const elapsedMs = today - orderDate;
+  const totalMs = 60 * 1000; // 1 minute
+  const progressPercent = Math.min((elapsedMs / totalMs) * 100, 100);
 
-  
-   
-
-
-  // Calculate days passed and remaining
-  const daysPassed = Math.floor((today - orderDate) / (1000 * 60 * 60 * 24));
-  const daysRemaining = Math.max(0, 7 - daysPassed);
-
-  // Determine shipping status
   let status = 'Preparing';
-  if (daysPassed >= 6) status = 'Delivered';
-  else if (daysPassed >= 3) status = 'Shipped';
-
-  const progressPercent = Math.min((daysPassed / 7) * 100, 100);
-
-
-  
+  if (progressPercent >= 100) status = 'Delivered';
+  else if (progressPercent >= 50) status = 'Shipped';
 
   cart.forEach(item => {
     const product = products.find(p => p.id === item.productId);
@@ -48,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const productHTML = `
       <div class="prod-con">
-        <div class="delivery-date">Arriving on ${deliveryDate.toDateString()}</div>
+        <div class="delivery-date">Arriving at ${deliveryDate.toLocaleTimeString()}</div>
         <div class="prod-name">${product.name}</div>
         <div class="prod-quantity">Quantity: ${item.quantity}</div>
         <div class="prod-img-con">
@@ -59,19 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="progress-bar" style="width: ${progressPercent}%;"></div>
         </div>
         <p class="delivery-eta">
-        ${daysRemaining === 0
-          ? '<strong>Arriving today</strong>'
-          : `Estimated delivery in <strong>${daysRemaining} day(s)</strong>`}
+          ${progressPercent >= 100
+            ? '<strong>Arriving now</strong>'
+            : `Estimated delivery in <strong>${Math.ceil((totalMs - elapsedMs) / 1000)} second(s)</strong>`}
         </p>
-
       </div>
     `;
 
     main.insertAdjacentHTML('beforeend', productHTML);
   });
-
-
-
-
-
 });
