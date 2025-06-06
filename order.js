@@ -2,10 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let cart = JSON.parse(localStorage.getItem('cart')) || [];
   const cartContainer = document.getElementById('grid-sec');
 
-  function formatPrice(cents) {
-    return `$${(cents / 100).toFixed(2)}`;
-  }
-
   function updateCartQuantity() {
     const quantity = cart.reduce((total, item) => total + item.quantity, 0);
     const quantityElements = document.querySelectorAll('.js-cart-quantity');
@@ -16,17 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderCart() {
     cartContainer.innerHTML = '';
-    if (cart.length === 0) {
-      cartContainer.innerHTML = '<p>Your cart is empty!</p>';
-      return;
-    }
 
-    const orderDateRaw = localStorage.getItem('orderDate');
-    const orderDate = orderDateRaw ? new Date(orderDateRaw) : null;
-    const currentDate = orderDate ? orderDate.toISOString().split('T')[0] : 'Not placed';
-    const deliveryDate = orderDate
-      ? new Date(orderDate.getTime() + 60 * 1000).toISOString().split('T')[0]
-      : 'Pending';
+    if (cart.length === 0) return;
+
+    const now = new Date();
+    const orderDateStr = now.toLocaleDateString();
+    const deliveryDate = new Date(now.getTime() + 60 * 1000); // 1-minute delivery time (for testing)
+    const deliveryDateStr = deliveryDate.toLocaleDateString();
 
     cart.forEach(item => {
       const product = products.find(p => p.id === item.productId);
@@ -45,18 +37,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="track-con">
             <div class="tracking-con">
               <div>
-                <label>
-                  <p class="deliv-date">Order-date:</p>
-                  <input type="radio" name="order-date" id="option">
-                  <p class="date">${currentDate}</p>
-                </label>
+                <p class="deliv-date">Order-date:</p>
+                <p class="date">${orderDateStr}</p>
               </div>
               <div>
-                <label>
-                  <p class="deliv-date">Delivery-date:</p>
-                  <input type="radio" id="option" name="delivery-date">
-                  <p class="date">${deliveryDate}</p>
-                </label>
+                <p class="deliv-date">Delivery-date:</p>
+                <p class="date">${deliveryDateStr}</p>
               </div>
             </div>
           </div>
@@ -77,20 +63,28 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCart();
   updateCartQuantity();
 
-  // Handle Place Order click
   document.addEventListener('click', (event) => {
     if (event.target.classList.contains('place-order-btn')) {
       const now = new Date();
-      localStorage.setItem('orderDate', now.toISOString());
+      let orderHistory = JSON.parse(localStorage.getItem('orderHistory')) || [];
+
+      cart.forEach(item => {
+        orderHistory.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          orderDate: now.toISOString()
+        });
+      });
+
+      localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
+      localStorage.removeItem('cart');
 
       const container = event.target.closest('.track-btn-con');
-      const placeBtn = container.querySelector('.place-order-btn');
-      const trackBtnLink = container.querySelector('a');
+      container.innerHTML = '<p><strong>Placing order... Redirecting to tracking...</strong></p>';
 
-      placeBtn.style.display = 'none';
-      trackBtnLink.style.display = 'inline-block';
-
-      alert('Order placed!');
+      setTimeout(() => {
+        window.location.href = 'tracking.html';
+      }, 1500); // 1.5 sec delay
     }
   });
 

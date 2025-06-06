@@ -1,35 +1,30 @@
 document.addEventListener('DOMContentLoaded', () => {
   const main = document.querySelector('.js-main');
-  const cart = JSON.parse(localStorage.getItem('cart')) || [];
-  const orderDateRaw = localStorage.getItem('orderDate');
+  const orderHistory = JSON.parse(localStorage.getItem('orderHistory')) || [];
 
   main.innerHTML = '';
 
-  if (!orderDateRaw) {
-    main.innerHTML = '<p>No order placed yet.</p>';
+  if (orderHistory.length === 0) {
+    main.innerHTML = '<p>No orders to track yet.</p>';
     return;
   }
 
-  const orderDate = new Date(orderDateRaw);
-  const deliveryDate = new Date(orderDate.getTime() + 60 * 1000); // 1 minute delivery for test
-  const today = new Date();
+  const totalMs = 60 * 1000; // 1-minute delivery window for test
 
-  if (!cart.length) {
-    main.innerHTML = '<p>No products to track.</p>';
-    return;
-  }
-
-  const elapsedMs = today - orderDate;
-  const totalMs = 60 * 1000; // 1 minute
-  const progressPercent = Math.min((elapsedMs / totalMs) * 100, 100);
-
-  let status = 'Preparing';
-  if (progressPercent >= 100) status = 'Delivered';
-  else if (progressPercent >= 50) status = 'Shipped';
-
-  cart.forEach(item => {
-    const product = products.find(p => p.id === item.productId);
+  orderHistory.forEach(order => {
+    const product = products.find(p => p.id === order.productId);
     if (!product) return;
+
+    const orderDate = new Date(order.orderDate);
+    const deliveryDate = new Date(orderDate.getTime() + totalMs);
+    const now = new Date();
+
+    const elapsedMs = now - orderDate;
+    const progressPercent = Math.min((elapsedMs / totalMs) * 100, 100);
+
+    let status = 'Preparing';
+    if (progressPercent >= 100) status = 'Delivered';
+    else if (progressPercent >= 50) status = 'Shipped';
 
     const progressLabels = `
       <div class="progress-labels-container">
@@ -43,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="prod-con">
         <div class="delivery-date">Arriving at ${deliveryDate.toLocaleTimeString()}</div>
         <div class="prod-name">${product.name}</div>
-        <div class="prod-quantity">Quantity: ${item.quantity}</div>
+        <div class="prod-quantity">Quantity: ${order.quantity}</div>
         <div class="prod-img-con">
           <img class="prod-img" src="${product.image}" alt="${product.name}">
         </div>

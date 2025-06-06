@@ -166,6 +166,8 @@ body {
         font-weight: bold;
         white-space: nowrap;
         font-size: 13px;
+        line-height: 5px;
+        
       }
 
       .track-pic{
